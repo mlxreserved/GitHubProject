@@ -11,7 +11,7 @@
     <ImageView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:src="@drawable/logo"
+        android:src="@drawable/ic_logo"
         android:layout_marginBottom="48dp"/>
 
     <com.google.android.material.textfield.TextInputLayout
@@ -26,6 +26,7 @@
         app:errorTextColor="@color/red">
 
         <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/textInputET"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:paddingHorizontal="12dp"

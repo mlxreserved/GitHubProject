@@ -1,6 +1,6 @@
 [versions]
 agp = "8.5.0"
-kotlin = "1.9.0"
+kotlin = "2.0.21"
 coreKtx = "1.13.0"
 junit = "4.13.2"
 junitVersion = "1.2.1"
@@ -16,6 +16,10 @@ serialization = "1.7.3"
 serializationPlugin = "2.1.0"
 serializationConverter = "1.0.0"
 okhttp = "4.12.0"
+hiltPluginVersion = "2.51.1"
+hiltVersion = "2.51.1"
+hiltCompilerVersion = "2.51.1"
+ksp = "2.0.21-1.0.27"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -32,9 +36,12 @@ squareup-retrofit2 = { group = "com.squareup.retrofit2", name = "retrofit", vers
 jetbrains-kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "serialization"}
 jakewharton-retrofit-kotlinx-serialization-converter = { group = "com.jakewharton.retrofit", name = "retrofit2-kotlinx-serialization-converter", version.ref = "serializationConverter"}
 squareup-okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp"}
+google-hilt = { group = "com.google.dagger", name = "hilt-android", version.ref = "hiltVersion"}
+google-hilt-compiler = { group = "com.google.dagger", name = "hilt-compiler", version.ref = "hiltCompilerVersion"}
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 jetbrains-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 jetbrains-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "serializationPlugin"}
-
+google-hilt-plugin = { id = "com.google.dagger.hilt.android", version.ref = "hiltPluginVersion"}
+google-ksp = { id = "com.google.devtools.ksp", version.ref = "ksp"}
