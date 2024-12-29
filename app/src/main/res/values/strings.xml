@@ -3,4 +3,17 @@
     <string name="personal_access_token_hint">Personal access token</string>
     <string name="sign_in">SIGN IN</string>
     <string name="invalid_token">Invalid token</string>
+    <string name="connection_error">Connection error</string>
+    <string name="connection_error_hint">Check your Internet connection</string>
+    <string name="retry">RETRY</string>
+    <string name="empty_repos">Empty</string>
+    <string name="empty_repos_hint">No repositories at the moment</string>
+    <string name="refresh">REFRESH</string>
+    <string name="server_error">Server error</string>
+    <string name="server_error_hint">Try later</string>
+    <string name="exit">Exit</string>
+    <string name="title_repos">Repositories</string>
+    <string name="stars">stars</string>
+    <string name="forks">forks</string>
+    <string name="watchers">watchers</string>
 </resources>

@@ -1,8 +1,8 @@
-package com.example.githubproject.auth
+package com.example.githubproject.screens.auth
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import com.example.githubproject.domain.SignInUseCase
+import com.example.githubproject.domain.usecase.SignInUseCase
 
 class AuthViewModelFactory (
     private val signInUseCase: SignInUseCase

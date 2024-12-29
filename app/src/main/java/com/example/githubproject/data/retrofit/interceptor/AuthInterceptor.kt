@@ -1,4 +1,4 @@
-package com.example.githubproject.data.interceptor
+package com.example.githubproject.data.retrofit.interceptor
 
 import okhttp3.Interceptor
 import okhttp3.Response
