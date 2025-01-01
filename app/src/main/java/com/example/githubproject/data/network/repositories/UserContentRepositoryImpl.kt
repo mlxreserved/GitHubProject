@@ -1,6 +1,6 @@
-package com.example.githubproject.data
+package com.example.githubproject.data.network.repositories
 
-import com.example.githubproject.data.retrofit.UserContentService
+import com.example.githubproject.data.network.retrofit.UserContentService
 import com.example.githubproject.domain.UserContentRepository
 import okhttp3.ResponseBody
 import retrofit2.Call

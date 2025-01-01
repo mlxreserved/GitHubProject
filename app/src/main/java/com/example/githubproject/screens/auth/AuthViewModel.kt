@@ -2,6 +2,7 @@ package com.example.githubproject.screens.auth
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.githubproject.data.sharedPref.MyPreference
 import com.example.githubproject.domain.usecase.SignInUseCase
 import dagger.hilt.android.HiltAndroidApp
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -15,7 +16,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class AuthViewModel @Inject constructor(
-    private val signInUseCase: SignInUseCase
+    private val signInUseCase: SignInUseCase,
+    private val myPreference: MyPreference
 ) : ViewModel() {
 
     private val _token: MutableStateFlow<String> =
@@ -29,6 +31,12 @@ class AuthViewModel @Inject constructor(
     val state: StateFlow<State> =
         _state.asStateFlow() // Состояние, которое нельзя изменять в фрагменте
 
+    init {
+        getToken()
+        if(_token.value != "") {
+            _state.update { State.Idle }
+        }
+    }
 
     // Обработка нажатия на signButton
     fun onSignButtonPressed() {
@@ -38,6 +46,7 @@ class AuthViewModel @Inject constructor(
                 try {
                     signInUseCase.execute("Bearer ${token.value}")
                     _state.update { State.Idle }
+                    saveToken(token.value)
                 } catch (e: Exception) {
                     _state.update { State.InvalidInput("Invalid token") }
                 }
@@ -51,6 +60,15 @@ class AuthViewModel @Inject constructor(
     fun onChangeToken(newToken: String) {
         _token.update { newToken }
         _state.update { State.Initial }
+    }
+
+    private fun saveToken(token: String) {
+        myPreference.setStoredToken(token = token)
+    }
+
+    private fun getToken() {
+        val token = myPreference.getStoredToken()
+        _token.update { token }
     }
 
     sealed interface State {

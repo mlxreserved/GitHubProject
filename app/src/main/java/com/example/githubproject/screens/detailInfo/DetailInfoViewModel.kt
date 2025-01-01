@@ -2,6 +2,7 @@ package com.example.githubproject.screens.detailInfo
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.githubproject.data.sharedPref.MyPreference
 import com.example.githubproject.domain.model.repo.RepoDetailsDomain
 import com.example.githubproject.domain.usecase.GetRepoDetailsInfoUseCase
 import com.example.githubproject.domain.usecase.GetRepositoryReadmeUseCase
@@ -21,25 +22,26 @@ import javax.inject.Inject
 @HiltViewModel
 class DetailInfoViewModel @Inject constructor(
     private val getRepoDetailsInfoUseCase: GetRepoDetailsInfoUseCase,
-    private val getRepositoryReadmeUseCase: GetRepositoryReadmeUseCase
+    private val getRepositoryReadmeUseCase: GetRepositoryReadmeUseCase,
+    private val myPreference: MyPreference
 ) : ViewModel() {
 
     private val _state: MutableStateFlow<State> = MutableStateFlow(State.Loading)
     val state: StateFlow<State> = _state.asStateFlow()
 
+    private val token = myPreference.getStoredToken()
+
     fun onOpenRepoDetailInfo(
         repoId: String,
         ownerName: String,
         repositoryName: String,
-        branchName: String,
-        token: String
+        branchName: String
     ) {
         getRepo(
             repoId = repoId,
             ownerName = ownerName,
             repositoryName = repositoryName,
-            branchName = branchName,
-            token = token
+            branchName = branchName
         )
     }
 
@@ -47,8 +49,7 @@ class DetailInfoViewModel @Inject constructor(
         repoId: String,
         ownerName: String,
         repositoryName: String,
-        branchName: String,
-        token: String
+        branchName: String
     ) {
         viewModelScope.launch {
             _state.update { State.Loading }
@@ -63,8 +64,7 @@ class DetailInfoViewModel @Inject constructor(
                 getReadme(
                     ownerName = ownerName,
                     repositoryName = repositoryName,
-                    branchName = branchName,
-                    token = token
+                    branchName = branchName
                 )
             } catch (e: IOException) {
                 _state.update { State.Error(IOEXCEPTION_NAME) }
@@ -78,8 +78,7 @@ class DetailInfoViewModel @Inject constructor(
     private fun getReadme(
         ownerName: String,
         repositoryName: String,
-        branchName: String,
-        token: String
+        branchName: String
     ) {
         _state.update { (it as State.Loaded).copy(readmeState = ReadmeState.Loading) }
 
@@ -138,69 +137,35 @@ class DetailInfoViewModel @Inject constructor(
         }
     }
 
-//    viewModelScope.launch {
-//            try{
-//
-//                if(response != "404: Not found") {
-//                    _state.update {
-//                        (it as State.Loaded).copy(
-//                            readmeState = ReadmeState.Loaded(
-//                                markdown = response
-//                            )
-//                        )
-//                    }
-//                } else {
-//                    _state.update {
-//                        (it as State.Loaded).copy(
-//                            readmeState = ReadmeState.Empty
-//                        )
-//                    }
-//                }
-//            } catch (e: IOException) {
-//                _state.update {
-//                    (it as State.Loaded).copy(
-//                        readmeState = ReadmeState.Error(error = IOEXCEPTION_NAME)
-//                    )
-//                }
-//            } catch (e: Exception) {
-//                _state.update {
-//                    (it as State.Loaded).copy(
-//                        readmeState = ReadmeState.Error(error = EXCEPTION_NAME)
-//                    )
-//                }
-//            }
-//        }
-
-
     fun onRetryButtonPressed(
         repoId: String,
         ownerName: String,
         repositoryName: String,
-        branchName: String,
-        token: String
+        branchName: String
     ) {
         getRepo(
             repoId = repoId,
             ownerName = ownerName,
             repositoryName = repositoryName,
-            branchName = branchName,
-            token = token
+            branchName = branchName
         )
     }
 
     fun onRefreshButtonPressed(
         ownerName: String,
         repositoryName: String,
-        branchName: String,
-        token: String
+        branchName: String
     ) {
         getReadme(
             ownerName = ownerName,
             repositoryName = repositoryName,
-            branchName = branchName,
-            token = token
+            branchName = branchName
         )
 
+    }
+
+    fun onExitButtonPressed() {
+        myPreference.removeStoredToken()
     }
 
     sealed interface State {

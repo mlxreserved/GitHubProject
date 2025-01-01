@@ -17,12 +17,8 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavController
 import androidx.navigation.fragment.findNavController
 import com.example.githubproject.R
-import com.example.githubproject.data.GithubRepositoryImpl
 import com.example.githubproject.screens.auth.AuthViewModel.State
-import com.example.githubproject.data.retrofit.RetrofitClient
 import com.example.githubproject.databinding.FragmentAuthBinding
-import com.example.githubproject.domain.GitHubRepository
-import com.example.githubproject.domain.usecase.SignInUseCase
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -103,8 +99,7 @@ class AuthFragment: Fragment() {
     }
 
     private fun updateUISuccess() {
-        val bundle = bundleOf(TOKEN_KEY to authViewModel.token.value)
-        navController?.navigate(R.id.action_authFragment_to_reposListFragment, bundle) // Вместе с переходом передаем token
+        navController?.navigate(R.id.action_authFragment_to_reposListFragment) // Вместе с переходом передаем token
     }
 
     private fun updateUIError(state: State.InvalidInput) {
@@ -123,9 +118,5 @@ class AuthFragment: Fragment() {
         binding.textInputLayout.error = null
         binding.loading.visibility = View.GONE
         binding.applyButton.text = getString(R.string.sign_in)
-    }
-
-    companion object {
-        const val TOKEN_KEY = "token"
     }
 }

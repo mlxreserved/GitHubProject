@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuInflater
@@ -22,20 +21,14 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavController
 import androidx.navigation.fragment.findNavController
 import com.example.githubproject.R
-import com.example.githubproject.data.GithubRepositoryImpl
-import com.example.githubproject.data.UserContentRepositoryImpl
-import com.example.githubproject.data.retrofit.RetrofitClient
 import com.example.githubproject.databinding.FragmentDetailInfoBinding
 import com.example.githubproject.domain.model.repo.RepoDetailsDomain
-import com.example.githubproject.domain.usecase.GetRepoDetailsInfoUseCase
-import com.example.githubproject.domain.usecase.GetRepositoryReadmeUseCase
 import com.example.githubproject.screens.auth.AuthFragment
 import com.example.githubproject.screens.reposList.ReposListFragment
 import dagger.hilt.android.AndroidEntryPoint
 import io.noties.markwon.Markwon
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 
 @AndroidEntryPoint
@@ -50,7 +43,6 @@ class DetailInfoFragment : Fragment() {
     private lateinit var repoName: String
     private lateinit var defaultBranch: String
     private lateinit var owner: String
-    private lateinit var token: String
     private lateinit var state: StateFlow<DetailInfoViewModel.State>
 
     private var navController: NavController? = null
@@ -62,7 +54,6 @@ class DetailInfoFragment : Fragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        token = arguments?.getString(AuthFragment.TOKEN_KEY) ?: ""
         repoId = arguments?.getString(ReposListFragment.REPO_ID_KEY) ?: ""
         repoName = arguments?.getString(ReposListFragment.REPO_NAME_KEY) ?: ""
         owner = arguments?.getString(ReposListFragment.REPO_OWNER) ?: ""
@@ -92,8 +83,7 @@ class DetailInfoFragment : Fragment() {
                 detailInfoViewModel.onRefreshButtonPressed(
                     ownerName = owner,
                     repositoryName = repoName,
-                    branchName = defaultBranch,
-                    token = token
+                    branchName = defaultBranch
                 )
             }
 
@@ -102,8 +92,7 @@ class DetailInfoFragment : Fragment() {
                     repoId = repoId,
                     ownerName = owner,
                     repositoryName = repoName,
-                    branchName = defaultBranch,
-                    token = token
+                    branchName = defaultBranch
                 )
             }
         }
@@ -124,6 +113,7 @@ class DetailInfoFragment : Fragment() {
             // Прослушка нажатий на кнопки в toolbar
             override fun onMenuItemSelected(menuItem: MenuItem): Boolean {
                 if (menuItem.itemId == R.id.action_exit) {
+                    detailInfoViewModel.onExitButtonPressed()
                     navController?.navigate(R.id.action_detailInfoFragment_to_authFragment)
                     return true
                 }
@@ -140,8 +130,7 @@ class DetailInfoFragment : Fragment() {
             repoId = repoId,
             ownerName = owner,
             repositoryName = repoName,
-            branchName = defaultBranch,
-            token = token
+            branchName = defaultBranch
         )
 
         viewLifecycleOwner.lifecycleScope.launch {

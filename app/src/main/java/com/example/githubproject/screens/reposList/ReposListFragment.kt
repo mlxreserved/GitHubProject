@@ -2,7 +2,6 @@ package com.example.githubproject.screens.reposList
 
 import android.content.Context
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuInflater
@@ -22,11 +21,8 @@ import androidx.navigation.NavController
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.githubproject.R
-import com.example.githubproject.data.GithubRepositoryImpl
-import com.example.githubproject.data.retrofit.RetrofitClient
 import com.example.githubproject.databinding.FragmentReposListBinding
 import com.example.githubproject.domain.model.repos.RepoDomain
-import com.example.githubproject.domain.usecase.GetRepositoriesUseCase
 import com.example.githubproject.screens.auth.AuthFragment
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.StateFlow
@@ -41,7 +37,6 @@ class ReposListFragment: Fragment() {
     private lateinit var binding: FragmentReposListBinding
     private lateinit var stateRepos: StateFlow<ReposListViewModel.StateRepos>
     private lateinit var adapter: ReposListAdapter
-    private lateinit var token: String
     private var navController: NavController? = null
 
     override fun onAttach(context: Context) {
@@ -51,7 +46,6 @@ class ReposListFragment: Fragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        token = arguments?.getString(AuthFragment.TOKEN_KEY) ?: ""
         stateRepos = reposListViewModel.stateRepos
     }
 
@@ -61,8 +55,6 @@ class ReposListFragment: Fragment() {
         savedInstanceState: Bundle?
     ): View? {
         binding = FragmentReposListBinding.inflate(inflater, container, false)
-
-        reposListViewModel.onOpenReposList(token = token)
 
         val activity: AppCompatActivity = activity as AppCompatActivity
 
@@ -79,11 +71,11 @@ class ReposListFragment: Fragment() {
 
             // Устанавливаем прослушку нажатия
             emptyReposBtn.setOnClickListener {
-                reposListViewModel.onRefreshButtonPressed(token = token)
+                reposListViewModel.onRefreshButtonPressed()
             }
             // Устанавливаем прослушку нажатия
             errorLoadingBtn.setOnClickListener {
-                reposListViewModel.onRetryButtonPressed(token = token)
+                reposListViewModel.onRetryButtonPressed()
             }
         }
 
@@ -102,6 +94,7 @@ class ReposListFragment: Fragment() {
             // Прослушка нажатий на кнопки в toolbar
             override fun onMenuItemSelected(menuItem: MenuItem): Boolean {
                 if (menuItem.itemId == R.id.action_exit) {
+                    reposListViewModel.onExitButtonPressed()
                     navController?.navigate(R.id.action_reposListFragment_to_authFragment)
                     return true
                 }
@@ -150,7 +143,6 @@ class ReposListFragment: Fragment() {
                 val bundle = bundleOf(
                     REPO_ID_KEY to model.id.toString(),
                     REPO_NAME_KEY to model.name,
-                    AuthFragment.TOKEN_KEY to token,
                     REPO_BRANCH to model.defaultBranch,
                     REPO_OWNER to model.owner.login
                 )

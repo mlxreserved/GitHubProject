@@ -1,4 +1,4 @@
-package com.example.githubproject.data.model.user
+package com.example.githubproject.data.network.model.user
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable

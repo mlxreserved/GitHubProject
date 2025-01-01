@@ -46,12 +46,13 @@
 
             <TextView
                 android:id="@+id/link_tv"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
                 android:textColor="@color/blue"
                 android:textSize="16sp"
                 app:layout_constraintBottom_toBottomOf="@+id/link_img"
+                app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toEndOf="@+id/link_img"
                 app:layout_constraintTop_toTopOf="@+id/link_img" />
 
@@ -232,13 +233,13 @@
             <!-- LOADED README -->
             <TextView
                 android:id="@+id/readme"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginHorizontal="8dp"
                 android:layout_marginTop="24dp"
+                app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/stars"
-                app:layout_constraintEnd_toEndOf="parent"/>
+                app:layout_constraintTop_toBottomOf="@+id/stars" />
 
             <!-- LOADING README -->
             <com.google.android.material.progressindicator.CircularProgressIndicator

@@ -1,8 +1,8 @@
-package com.example.githubproject.data.retrofit
+package com.example.githubproject.data.network.retrofit
 
-import com.example.githubproject.data.model.repo.RepoDetails
-import com.example.githubproject.data.model.repos.Repo
-import com.example.githubproject.data.model.user.UserInfo
+import com.example.githubproject.data.network.model.repo.RepoDetails
+import com.example.githubproject.data.network.model.repos.Repo
+import com.example.githubproject.data.network.model.user.UserInfo
 import kotlinx.serialization.json.JsonObject
 import okhttp3.ResponseBody
 import org.json.JSONObject

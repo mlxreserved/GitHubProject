@@ -1,12 +1,12 @@
-package com.example.githubproject.data
+package com.example.githubproject.data.network.repositories
 
-import com.example.githubproject.data.model.repo.License
-import com.example.githubproject.data.model.repo.RepoDetails
-import com.example.githubproject.data.model.repos.Owner
-import com.example.githubproject.data.model.repos.Repo
+import com.example.githubproject.data.network.model.repo.License
+import com.example.githubproject.data.network.model.repo.RepoDetails
+import com.example.githubproject.data.network.model.repos.Owner
+import com.example.githubproject.data.network.model.repos.Repo
 import com.example.githubproject.domain.model.user.UserInfoDomain
-import com.example.githubproject.data.model.user.UserInfo
-import com.example.githubproject.data.retrofit.GitHubService
+import com.example.githubproject.data.network.model.user.UserInfo
+import com.example.githubproject.data.network.retrofit.GitHubService
 import com.example.githubproject.domain.GitHubRepository
 import com.example.githubproject.domain.model.repo.LicenseDomain
 import com.example.githubproject.domain.model.repo.RepoDetailsDomain

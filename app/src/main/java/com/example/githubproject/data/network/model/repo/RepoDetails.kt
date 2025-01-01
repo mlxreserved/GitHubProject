@@ -1,4 +1,4 @@
-package com.example.githubproject.data.model.repo
+package com.example.githubproject.data.network.model.repo
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable

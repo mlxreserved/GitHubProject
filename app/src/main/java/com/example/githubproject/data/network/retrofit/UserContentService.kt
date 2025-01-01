@@ -1,4 +1,4 @@
-package com.example.githubproject.data.retrofit
+package com.example.githubproject.data.network.retrofit
 
 import okhttp3.ResponseBody
 import retrofit2.Call

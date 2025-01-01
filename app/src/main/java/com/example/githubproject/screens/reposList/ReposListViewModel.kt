@@ -2,6 +2,7 @@ package com.example.githubproject.screens.reposList
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.githubproject.data.sharedPref.MyPreference
 import com.example.githubproject.domain.model.repos.RepoDomain
 import com.example.githubproject.domain.usecase.GetRepositoriesUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -16,28 +17,31 @@ import javax.inject.Inject
 @HiltViewModel
 class ReposListViewModel @Inject constructor(
     private val getRepositoriesUseCase: GetRepositoriesUseCase,
+    private val myPreference: MyPreference
 ) : ViewModel() {
 
     private val _stateRepos: MutableStateFlow<StateRepos> = MutableStateFlow(StateRepos.Loading) // Инкапсуляция состояния
     val stateRepos: StateFlow<StateRepos> = _stateRepos.asStateFlow() // Состояние, которое нельзя изменить в фрагменте
 
+    private val token = myPreference.getStoredToken()
+
     // При первом запуске фрагмента
-    fun onOpenReposList(token: String) {
-        getRepos(token = token)
+    init {
+        getRepos()
     }
 
     // Обработка нажатия на кнопку refresh
-    fun onRefreshButtonPressed(token: String) {
-        getRepos(token = token)
+    fun onRefreshButtonPressed() {
+        getRepos()
     }
 
     // Обработка нажатия на кнопку retry
-    fun onRetryButtonPressed(token: String) {
-        getRepos(token = token)
+    fun onRetryButtonPressed() {
+        getRepos()
     }
 
     // Получение всех репозиториев
-    private fun getRepos(token: String) {
+    private fun getRepos() {
         viewModelScope.launch {
             _stateRepos.update { StateRepos.Loading }
             try {
@@ -53,6 +57,10 @@ class ReposListViewModel @Inject constructor(
                 _stateRepos.update { StateRepos.Error(EXCEPTION_NAME) }
             }
         }
+    }
+
+    fun onExitButtonPressed() {
+        myPreference.removeStoredToken()
     }
 
     sealed interface StateRepos {
