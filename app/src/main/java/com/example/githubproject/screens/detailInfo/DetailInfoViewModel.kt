@@ -4,44 +4,202 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.githubproject.domain.model.repo.RepoDetailsDomain
 import com.example.githubproject.domain.usecase.GetRepoDetailsInfoUseCase
+import com.example.githubproject.domain.usecase.GetRepositoryReadmeUseCase
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import okhttp3.ResponseBody
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 import java.io.IOException
+import javax.inject.Inject
 
-class DetailInfoViewModel (
-    private val getRepoDetailsInfoUseCase: GetRepoDetailsInfoUseCase
+@HiltViewModel
+class DetailInfoViewModel @Inject constructor(
+    private val getRepoDetailsInfoUseCase: GetRepoDetailsInfoUseCase,
+    private val getRepositoryReadmeUseCase: GetRepositoryReadmeUseCase
 ) : ViewModel() {
 
     private val _state: MutableStateFlow<State> = MutableStateFlow(State.Loading)
     val state: StateFlow<State> = _state.asStateFlow()
 
-    private val _stateReadme: MutableStateFlow<ReadmeState> = MutableStateFlow(ReadmeState.Loading)
-    val stateReadme: StateFlow<ReadmeState> = _stateReadme.asStateFlow()
-
-    fun onOpenRepoDetailInfo(owner: String, repo: String) {
-        getRepo(owner = owner, repo = repo)
+    fun onOpenRepoDetailInfo(
+        repoId: String,
+        ownerName: String,
+        repositoryName: String,
+        branchName: String,
+        token: String
+    ) {
+        getRepo(
+            repoId = repoId,
+            ownerName = ownerName,
+            repositoryName = repositoryName,
+            branchName = branchName,
+            token = token
+        )
     }
 
-    private fun getRepo(owner: String, repo: String) {
+    private fun getRepo(
+        repoId: String,
+        ownerName: String,
+        repositoryName: String,
+        branchName: String,
+        token: String
+    ) {
         viewModelScope.launch {
             _state.update { State.Loading }
             try {
-                val githubRepo = getRepoDetailsInfoUseCase.execute(owner = owner, repo = repo)
-                getReadme()
-                _state.update { State.Loaded(githubRepo = githubRepo, readmeState = _stateReadme.value) }
+                val githubRepo = getRepoDetailsInfoUseCase.execute(repoId = repoId, token = "Bearer $token")
+                _state.update {
+                    State.Loaded(
+                        githubRepo = githubRepo,
+                        readmeState = ReadmeState.Loading
+                    )
+                }
+                getReadme(
+                    ownerName = ownerName,
+                    repositoryName = repositoryName,
+                    branchName = branchName,
+                    token = token
+                )
             } catch (e: IOException) {
-                _state.update { State.Error(e.javaClass.name) }
+                _state.update { State.Error(IOEXCEPTION_NAME) }
             } catch (e: Exception) {
-                _state.update { State.Error(e.javaClass.name) }
+                _state.update { State.Error(EXCEPTION_NAME) }
             }
         }
 
     }
 
-    private suspend fun getReadme() {
+    private fun getReadme(
+        ownerName: String,
+        repositoryName: String,
+        branchName: String,
+        token: String
+    ) {
+        _state.update { (it as State.Loaded).copy(readmeState = ReadmeState.Loading) }
+
+        viewModelScope.launch {
+            val call = getRepositoryReadmeUseCase.execute(
+                ownerName = ownerName,
+                repositoryName = repositoryName,
+                branchName = branchName,
+                token = "Bearer $token"
+            )
+
+
+            call.enqueue(object : Callback<ResponseBody> {
+                // Реакция на ответ от сервера
+                override fun onResponse(
+                    call: Call<ResponseBody>,
+                    response: Response<ResponseBody>
+                ) {
+                    if (response.isSuccessful) {
+                        val responseBody = response.body()
+                        val rawResponse = responseBody?.string() ?: ""
+                        _state.update {
+                            (it as State.Loaded).copy(
+                                readmeState = ReadmeState.Loaded(
+                                    markdown = rawResponse
+                                )
+                            )
+                        }
+                    } else {
+                        _state.update { (it as State.Loaded).copy(readmeState = ReadmeState.Empty) }
+                    }
+                }
+
+                // Реакция на ошибку при обращении к серверу
+                override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
+                    if (t is IOException) {
+                        _state.update {
+                            (it as State.Loaded).copy(
+                                readmeState = ReadmeState.Error(
+                                    IOEXCEPTION_NAME
+                                )
+                            )
+                        }
+                    } else {
+                        _state.update {
+                            (it as State.Loaded).copy(
+                                readmeState = ReadmeState.Error(
+                                    EXCEPTION_NAME
+                                )
+                            )
+                        }
+                    }
+                }
+
+            })
+        }
+    }
+
+//    viewModelScope.launch {
+//            try{
+//
+//                if(response != "404: Not found") {
+//                    _state.update {
+//                        (it as State.Loaded).copy(
+//                            readmeState = ReadmeState.Loaded(
+//                                markdown = response
+//                            )
+//                        )
+//                    }
+//                } else {
+//                    _state.update {
+//                        (it as State.Loaded).copy(
+//                            readmeState = ReadmeState.Empty
+//                        )
+//                    }
+//                }
+//            } catch (e: IOException) {
+//                _state.update {
+//                    (it as State.Loaded).copy(
+//                        readmeState = ReadmeState.Error(error = IOEXCEPTION_NAME)
+//                    )
+//                }
+//            } catch (e: Exception) {
+//                _state.update {
+//                    (it as State.Loaded).copy(
+//                        readmeState = ReadmeState.Error(error = EXCEPTION_NAME)
+//                    )
+//                }
+//            }
+//        }
+
+
+    fun onRetryButtonPressed(
+        repoId: String,
+        ownerName: String,
+        repositoryName: String,
+        branchName: String,
+        token: String
+    ) {
+        getRepo(
+            repoId = repoId,
+            ownerName = ownerName,
+            repositoryName = repositoryName,
+            branchName = branchName,
+            token = token
+        )
+    }
+
+    fun onRefreshButtonPressed(
+        ownerName: String,
+        repositoryName: String,
+        branchName: String,
+        token: String
+    ) {
+        getReadme(
+            ownerName = ownerName,
+            repositoryName = repositoryName,
+            branchName = branchName,
+            token = token
+        )
 
     }
 
@@ -60,6 +218,10 @@ class DetailInfoViewModel (
         object Empty : ReadmeState // Состояние отсутсвия readme
         data class Error(val error: String) : ReadmeState // Состояние ошибки при загрузке readme
         data class Loaded(val markdown: String) : ReadmeState // Состояние успешной загрузки readme
+    }
 
+    companion object {
+        const val EXCEPTION_NAME = "Exception" // константа для названия Exception
+        const val IOEXCEPTION_NAME = "IOException" // константа для названия IOException
     }
 }

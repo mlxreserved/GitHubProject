@@ -10,4 +10,5 @@
     <color name="yellow">#FAD876</color>
     <color name="light_green">#6ED370</color>
     <color name="light_blue">#9CFFF9</color>
+    <color name="error_loading_red">#CB4F4F</color>
 </resources>

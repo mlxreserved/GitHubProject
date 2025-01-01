@@ -17,26 +17,21 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavController
 import androidx.navigation.fragment.findNavController
 import com.example.githubproject.R
+import com.example.githubproject.data.GithubRepositoryImpl
 import com.example.githubproject.screens.auth.AuthViewModel.State
-import com.example.githubproject.data.AppRepositoryImpl
 import com.example.githubproject.data.retrofit.RetrofitClient
 import com.example.githubproject.databinding.FragmentAuthBinding
-import com.example.githubproject.domain.AppRepository
+import com.example.githubproject.domain.GitHubRepository
 import com.example.githubproject.domain.usecase.SignInUseCase
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-
+@AndroidEntryPoint
 class AuthFragment: Fragment() {
 
-    // ВСЕ В ЗАВИСИМОСТИ
-    private val client = RetrofitClient.getClient()
-    private val appRepository: AppRepository = AppRepositoryImpl(client)
-    private val signInUseCase = SignInUseCase(appRepository)
-    private val authViewModelFactory: AuthViewModelFactory = AuthViewModelFactory(signInUseCase = signInUseCase)
-    private val authViewModel: AuthViewModel by viewModels {
-        authViewModelFactory
-    }
+
+    val authViewModel: AuthViewModel by viewModels()
 
     private lateinit var binding: FragmentAuthBinding // viewBinding
     private lateinit var state: StateFlow<State> // Состояние авторизации

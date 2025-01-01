@@ -16,4 +16,5 @@
     <string name="stars">stars</string>
     <string name="forks">forks</string>
     <string name="watchers">watchers</string>
+    <string name="empty_readme">No README.md</string>
 </resources>

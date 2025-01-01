@@ -7,26 +7,29 @@ import com.example.githubproject.data.model.repos.Repo
 import com.example.githubproject.domain.model.user.UserInfoDomain
 import com.example.githubproject.data.model.user.UserInfo
 import com.example.githubproject.data.retrofit.GitHubService
-import com.example.githubproject.domain.AppRepository
+import com.example.githubproject.domain.GitHubRepository
 import com.example.githubproject.domain.model.repo.LicenseDomain
 import com.example.githubproject.domain.model.repo.RepoDetailsDomain
 import com.example.githubproject.domain.model.repos.OwnerDomain
 import com.example.githubproject.domain.model.repos.RepoDomain
+import javax.inject.Inject
 
-class AppRepositoryImpl(private val gitHubClient: GitHubService) : AppRepository {
+class GithubRepositoryImpl @Inject constructor(
+        private val gitHubClient: GitHubService
+) : GitHubRepository {
 
     override suspend fun signIn(token: String): UserInfoDomain {
         val res = gitHubClient.signIn(token)
         return mapUserInfoToUserInfoDomain(res)
     }
 
-    override suspend fun getRepositories(): List<RepoDomain> {
-        val res = gitHubClient.getRepositories()
+    override suspend fun getRepositories(token: String): List<RepoDomain> {
+        val res = gitHubClient.getRepositories(token = token)
         return res.map { mapRepoToRepoDomain(it) }
     }
 
-    override suspend fun getRepository(owner: String, repo: String): RepoDetailsDomain {
-        val res = gitHubClient.getRepository(owner = owner, repo = repo)
+    override suspend fun getRepository(repoId: String, token: String): RepoDetailsDomain {
+        val res = gitHubClient.getRepository(repoId = repoId, token = token)
         return mapRepoDetailsToRepoDetailsDomain(res)
     }
 
@@ -45,7 +48,9 @@ class AppRepositoryImpl(private val gitHubClient: GitHubService) : AppRepository
     private fun mapRepoToRepoDomain(repo: Repo): RepoDomain {
         return RepoDomain(
             name = repo.name,
+            id = repo.id,
             owner = mapOwnerToOwnerDomain(repo.owner),
+            defaultBranch = repo.defaultBranch,
             language = repo.language,
             description = repo.description
         )
@@ -74,4 +79,5 @@ class AppRepositoryImpl(private val gitHubClient: GitHubService) : AppRepository
             null
         }
     }
+
 }

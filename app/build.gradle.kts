@@ -45,9 +45,12 @@ dependencies {
     // Retrofit
     implementation(libs.squareup.retrofit2)
 
+    // Markdown
+    implementation("io.noties.markwon:core:4.6.2")
     // Serialization
     implementation(libs.jetbrains.kotlinx.serialization.json)
     implementation(libs.jakewharton.retrofit.kotlinx.serialization.converter)
+    implementation(libs.squareup.retrofit2.converter.scalars)
     implementation(libs.squareup.okhttp)
 
     // Navigation

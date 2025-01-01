@@ -9,13 +9,11 @@ import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
-import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.os.bundleOf
 import androidx.core.view.MenuHost
 import androidx.core.view.MenuProvider
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -24,26 +22,20 @@ import androidx.navigation.NavController
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.githubproject.R
-import com.example.githubproject.data.AppRepositoryImpl
+import com.example.githubproject.data.GithubRepositoryImpl
 import com.example.githubproject.data.retrofit.RetrofitClient
 import com.example.githubproject.databinding.FragmentReposListBinding
 import com.example.githubproject.domain.model.repos.RepoDomain
 import com.example.githubproject.domain.usecase.GetRepositoriesUseCase
 import com.example.githubproject.screens.auth.AuthFragment
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
+@AndroidEntryPoint
 class ReposListFragment: Fragment() {
 
-
-    // ВСЕ В ЗАВИСИМОСТИ
-    private val client by lazy { RetrofitClient.getAuthenticatedClient(token) }
-    private val appRepository by lazy { AppRepositoryImpl(client) }
-    private val getRepositoriesUseCase by lazy { GetRepositoriesUseCase(appRepository) }
-    private val reposListViewModelFactory by lazy { ReposListViewModelFactory(getRepositoriesUseCase) }
-    private val reposListViewModel: ReposListViewModel by viewModels {
-        reposListViewModelFactory
-    }
+    val reposListViewModel: ReposListViewModel by viewModels()
     private val menuHost: MenuHost get() = requireActivity()
 
     private lateinit var binding: FragmentReposListBinding
@@ -70,6 +62,7 @@ class ReposListFragment: Fragment() {
     ): View? {
         binding = FragmentReposListBinding.inflate(inflater, container, false)
 
+        reposListViewModel.onOpenReposList(token = token)
 
         val activity: AppCompatActivity = activity as AppCompatActivity
 
@@ -86,11 +79,11 @@ class ReposListFragment: Fragment() {
 
             // Устанавливаем прослушку нажатия
             emptyReposBtn.setOnClickListener {
-                reposListViewModel.onRefreshButtonPressed()
+                reposListViewModel.onRefreshButtonPressed(token = token)
             }
             // Устанавливаем прослушку нажатия
             errorLoadingBtn.setOnClickListener {
-                reposListViewModel.onRetryButtonPressed()
+                reposListViewModel.onRetryButtonPressed(token = token)
             }
         }
 
@@ -154,7 +147,13 @@ class ReposListFragment: Fragment() {
         adapter.setOnClickListener(object :
             ReposListAdapter.OnClickListener {
             override fun onClick(position: Int, model: RepoDomain) {
-                val bundle = bundleOf(REPO_KEY to model.name, OWNER_KEY to model.owner.login, AuthFragment.TOKEN_KEY to token)
+                val bundle = bundleOf(
+                    REPO_ID_KEY to model.id.toString(),
+                    REPO_NAME_KEY to model.name,
+                    AuthFragment.TOKEN_KEY to token,
+                    REPO_BRANCH to model.defaultBranch,
+                    REPO_OWNER to model.owner.login
+                )
                 navController?.navigate(R.id.action_reposListFragment_to_detailInfoFragment, bundle)
             }
 
@@ -179,11 +178,11 @@ class ReposListFragment: Fragment() {
         binding.errorLoadingBtn.visibility = View.VISIBLE
 
         // Проверка связана ошибка с интернетом или с сервером
-        if(errorName == "IOException") {
+        if(errorName == ReposListViewModel.IOEXCEPTION_NAME) {
             binding.errorTv.text = getString(R.string.connection_error)
             binding.errorHintTv.text = getString(R.string.connection_error_hint)
             binding.errorImage.setImageResource(R.drawable.ic_connection_error)
-        } else {
+        } else if(errorName == ReposListViewModel.EXCEPTION_NAME) {
             binding.errorTv.text = getString(R.string.server_error)
             binding.errorHintTv.text = getString(R.string.server_error_hint)
             binding.errorImage.setImageResource(R.drawable.ic_server_error)
@@ -201,7 +200,9 @@ class ReposListFragment: Fragment() {
 
 
     companion object {
-        const val REPO_KEY = "repo"
-        const val OWNER_KEY = "owner"
+        const val REPO_ID_KEY = "repoId"
+        const val REPO_NAME_KEY = "repoName"
+        const val REPO_BRANCH = "defaultBranch"
+        const val REPO_OWNER = "owner"
     }
 }

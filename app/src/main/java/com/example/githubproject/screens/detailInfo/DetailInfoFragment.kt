@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuInflater
@@ -21,36 +22,36 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavController
 import androidx.navigation.fragment.findNavController
 import com.example.githubproject.R
-import com.example.githubproject.data.AppRepositoryImpl
+import com.example.githubproject.data.GithubRepositoryImpl
+import com.example.githubproject.data.UserContentRepositoryImpl
 import com.example.githubproject.data.retrofit.RetrofitClient
-import com.example.githubproject.databinding.FragmentAuthBinding
 import com.example.githubproject.databinding.FragmentDetailInfoBinding
 import com.example.githubproject.domain.model.repo.RepoDetailsDomain
 import com.example.githubproject.domain.usecase.GetRepoDetailsInfoUseCase
+import com.example.githubproject.domain.usecase.GetRepositoryReadmeUseCase
 import com.example.githubproject.screens.auth.AuthFragment
 import com.example.githubproject.screens.reposList.ReposListFragment
+import dagger.hilt.android.AndroidEntryPoint
+import io.noties.markwon.Markwon
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class DetailInfoFragment: Fragment() {
 
-    // В ЗАВИСИМОСТИ
-    private val gitHubClient by lazy { RetrofitClient.getAuthenticatedClient(token) }
-    private val appRepository by lazy { AppRepositoryImpl(gitHubClient) }
-    private val getRepoDetailsInfoUseCase by lazy { GetRepoDetailsInfoUseCase(appRepository) }
-    private val detailInfoViewModelFactory by lazy { DetailInfoViewModelFactory(getRepoDetailsInfoUseCase) }
-    private val detailInfoViewModel: DetailInfoViewModel by viewModels {
-        detailInfoViewModelFactory
-    }
+@AndroidEntryPoint
+class DetailInfoFragment : Fragment() {
+
+    val detailInfoViewModel: DetailInfoViewModel by viewModels()
 
     private val menuHost: MenuHost get() = requireActivity()
 
     private lateinit var binding: FragmentDetailInfoBinding
-    private lateinit var repo: String
+    private lateinit var repoId: String
+    private lateinit var repoName: String
+    private lateinit var defaultBranch: String
     private lateinit var owner: String
     private lateinit var token: String
     private lateinit var state: StateFlow<DetailInfoViewModel.State>
-
 
     private var navController: NavController? = null
 
@@ -61,9 +62,11 @@ class DetailInfoFragment: Fragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        repo = arguments?.getString(ReposListFragment.REPO_KEY) ?: ""
-        owner = arguments?.getString(ReposListFragment.OWNER_KEY) ?: ""
         token = arguments?.getString(AuthFragment.TOKEN_KEY) ?: ""
+        repoId = arguments?.getString(ReposListFragment.REPO_ID_KEY) ?: ""
+        repoName = arguments?.getString(ReposListFragment.REPO_NAME_KEY) ?: ""
+        owner = arguments?.getString(ReposListFragment.REPO_OWNER) ?: ""
+        defaultBranch = arguments?.getString(ReposListFragment.REPO_BRANCH) ?: ""
         state = detailInfoViewModel.state
     }
 
@@ -81,14 +84,32 @@ class DetailInfoFragment: Fragment() {
             setSupportActionBar(binding.toolbar)
             supportActionBar?.setDisplayHomeAsUpEnabled(true)
             supportActionBar?.setHomeAsUpIndicator(R.drawable.ic_back)
-            supportActionBar?.title = repo
+            supportActionBar?.title = repoName
         }
 
+        binding.apply {
+            errorReadmeBtn.setOnClickListener {
+                detailInfoViewModel.onRefreshButtonPressed(
+                    ownerName = owner,
+                    repositoryName = repoName,
+                    branchName = defaultBranch,
+                    token = token
+                )
+            }
 
+            errorLoadingBtn.setOnClickListener {
+                detailInfoViewModel.onRetryButtonPressed(
+                    repoId = repoId,
+                    ownerName = owner,
+                    repositoryName = repoName,
+                    branchName = defaultBranch,
+                    token = token
+                )
+            }
+        }
 
         return binding.root
     }
-
 
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -115,14 +136,35 @@ class DetailInfoFragment: Fragment() {
             }
         }, viewLifecycleOwner)
 
-        detailInfoViewModel.onOpenRepoDetailInfo(owner = owner, repo = repo)
+        detailInfoViewModel.onOpenRepoDetailInfo(
+            repoId = repoId,
+            ownerName = owner,
+            repositoryName = repoName,
+            branchName = defaultBranch,
+            token = token
+        )
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                detailInfoViewModel.state.collect { state ->
-                    when(state) {
-                        is DetailInfoViewModel.State.Error -> {}
-                        is DetailInfoViewModel.State.Loaded -> updateUISuccess(repoDetails = state.githubRepo)
+                state.collect { state ->
+                    when (state) {
+                        is DetailInfoViewModel.State.Error -> updateUIError(error = state.error)
+                        is DetailInfoViewModel.State.Loaded -> {
+                            updateUISuccess(repoDetails = state.githubRepo)
+                            when (state.readmeState) {
+                                DetailInfoViewModel.ReadmeState.Empty -> updateUIReadmeEmpty()
+                                is DetailInfoViewModel.ReadmeState.Error -> updateUIReadmeError(
+                                    error = state.readmeState.error
+                                )
+
+                                is DetailInfoViewModel.ReadmeState.Loaded -> updateUIReadmeSuccess(
+                                    markdown = state.readmeState.markdown
+                                )
+
+                                DetailInfoViewModel.ReadmeState.Loading -> updateUIReadmeLoading()
+                            }
+                        }
+
                         DetailInfoViewModel.State.Loading -> updateUILoading()
                     }
                 }
@@ -138,14 +180,21 @@ class DetailInfoFragment: Fragment() {
 
     private fun updateUISuccess(repoDetails: RepoDetailsDomain) {
         binding.apply {
-            linkTv.text = repoDetails.htmlUrl
-            linkTv.setOnClickListener {
-                goToUrl(repoDetails.htmlUrl)
+            linkTv.apply {
+                text = repoDetails.htmlUrl
+                setOnClickListener {
+                    goToUrl(repoDetails.htmlUrl)
+                }
+                visibility = View.VISIBLE
             }
+            linkImg.visibility = View.VISIBLE
             watchersCountTv.text = repoDetails.watchersCount.toString()
             forksCountTv.text = repoDetails.forksCount.toString()
             starsCountTv.text = repoDetails.stargazersCount.toString()
-            if(repoDetails.license != null) {
+            watchers.visibility = View.VISIBLE
+            forks.visibility = View.VISIBLE
+            stars.visibility = View.VISIBLE
+            if (repoDetails.license != null) {
                 licenseImg.visibility = View.VISIBLE
                 licenseTv.visibility = View.VISIBLE
                 licenseTv.text = repoDetails.license.spdxId
@@ -153,11 +202,97 @@ class DetailInfoFragment: Fragment() {
                 licenseImg.visibility = View.GONE
                 licenseTv.visibility = View.GONE
             }
+            loading.visibility = View.GONE
+            errorLoading.visibility = View.GONE
+            errorLoadingBtn.visibility = View.GONE
+            errorReadmeBtn.visibility = View.GONE
         }
     }
 
     private fun updateUILoading() {
+        binding.apply {
+            linkTv.visibility = View.GONE
+            linkImg.visibility = View.GONE
+            licenseTv.visibility = View.GONE
+            licenseImg.visibility = View.GONE
+            watchers.visibility = View.GONE
+            forks.visibility = View.GONE
+            stars.visibility = View.GONE
+            errorLoading.visibility = View.GONE
+            errorLoadingBtn.visibility = View.GONE
+            errorReadmeBtn.visibility = View.GONE
+            loading.visibility = View.VISIBLE
+            emptyReadme.visibility = View.GONE
+        }
+    }
 
+    private fun updateUIError(error: String) {
+        binding.apply {
+            linkTv.visibility = View.GONE
+            linkImg.visibility = View.GONE
+            licenseTv.visibility = View.GONE
+            licenseImg.visibility = View.GONE
+            watchers.visibility = View.GONE
+            forks.visibility = View.GONE
+            stars.visibility = View.GONE
+            errorLoading.visibility = View.VISIBLE
+            errorLoadingBtn.visibility = View.VISIBLE
+            errorReadmeBtn.visibility = View.GONE
+            loading.visibility = View.GONE
+            readme.visibility = View.GONE
+            emptyReadme.visibility = View.GONE
+            if (error == DetailInfoViewModel.IOEXCEPTION_NAME) {
+                errorTv.text = getString(R.string.connection_error)
+                errorHintTv.text = getString(R.string.connection_error_hint)
+                errorImage.setImageResource(R.drawable.ic_connection_error)
+            } else {
+                errorTv.text = getString(R.string.server_error)
+                errorHintTv.text = getString(R.string.server_error_hint)
+                errorImage.setImageResource(R.drawable.ic_server_error)
+            }
+        }
+    }
+
+    private fun updateUIReadmeSuccess(markdown: String) {
+        binding.readme.visibility = View.VISIBLE
+        binding.loadingReadme.visibility = View.GONE
+        binding.emptyReadme.visibility = View.GONE
+        val markwon = Markwon.create(requireContext())
+        markwon.setMarkdown(binding.readme, markdown)
+    }
+
+    private fun updateUIReadmeError(error: String) {
+        binding.apply {
+            loadingReadme.visibility = View.GONE
+            errorLoading.visibility = View.VISIBLE
+            errorLoadingBtn.visibility = View.GONE
+            errorReadmeBtn.visibility = View.VISIBLE
+            emptyReadme.visibility = View.GONE
+            loading.visibility = View.GONE
+            readme.visibility = View.GONE
+            if (error == DetailInfoViewModel.IOEXCEPTION_NAME) {
+                errorTv.text = getString(R.string.connection_error)
+                errorHintTv.text = getString(R.string.connection_error_hint)
+                errorImage.setImageResource(R.drawable.ic_connection_error)
+            } else {
+                errorTv.text = getString(R.string.server_error)
+                errorHintTv.text = getString(R.string.server_error_hint)
+                errorImage.setImageResource(R.drawable.ic_server_error)
+            }
+        }
+    }
+
+    private fun updateUIReadmeEmpty() {
+        binding.readme.visibility = View.GONE
+        binding.loadingReadme.visibility = View.GONE
+        binding.emptyReadme.text = getString(R.string.empty_readme)
+        binding.emptyReadme.visibility = View.VISIBLE
+    }
+
+    private fun updateUIReadmeLoading() {
+        binding.readme.visibility = View.GONE
+        binding.loadingReadme.visibility = View.VISIBLE
+        binding.emptyReadme.visibility = View.GONE
     }
 
     private fun goToUrl(url: String) {
